@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TravelPay - Pay Anywhere Worldwide</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1A73E8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- TEST MODE BANNER -->
+    <div class="test-mode-banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+      TEST MODE • Razorpay Test Gateway & Sandbox Settlement Active
+    </div>
+
+    <!-- TOP APP BAR -->
+    <header class="top-bar">
+      <div class="brand-badge">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        <span>TravelPay</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="user-avatar" class="user-avatar-btn" onclick="switchNavTab('profile')">T</button>
+      </div>
+    </header>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast"></div>
+
+    <!-- ==================== VIEW 1: WELCOME SCREEN ==================== -->
+    <main id="view-welcome" class="view-container">
+      <div style="text-align: center; padding: 40px 10px 20px 10px;">
+        <div style="width: 80px; height: 80px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z"/></svg>
+        </div>
+        <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">Pay Like a Local Worldwide</h1>
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 30px;">
+          Scan any foreign merchant QR code (PromptPay, QRIS, SGQR, VietQR) abroad. Pay in INR via Razorpay gateway, we settle the merchant in their local currency.
+        </p>
+        <button class="btn btn-primary" onclick="showView('view-login')">Get Started</button>
+        <div style="margin-top: 15px;">
+          <a href="/admin" target="_blank" style="font-size: 13px; color: var(--text-secondary); text-decoration: none;">Admin Console &rarr;</a>
+          &bull;
+          <a href="/merchant-qr" target="_blank" style="font-size: 13px; color: var(--text-secondary); text-decoration: none;">Merchant QR Generator &rarr;</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== VIEW 2: LOGIN / SIGNUP ==================== -->
+    <div id="view-login" class="view-container">
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Enter your mobile number</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">We'll send an SMS with a 6-digit verification code.</p>
+
+        <div class="form-group">
+          <label class="form-label">Mobile Number</label>
+          <div style="display: flex; gap: 8px;">
+            <select class="input-box" style="width: 90px; padding: 12px 8px;">
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+65">🇸🇬 +65</option>
+              <option value="+66">🇹🇭 +66</option>
+            </select>
+            <input type="tel" id="login-phone" class="input-box" placeholder="9876543210" value="+919876543210">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="handleSendOtp()">Continue with OTP</button>
+
+        <div style="text-align: center; margin: 20px 0; color: var(--text-secondary); font-size: 13px;">— OR —</div>
+
+        <button class="btn btn-secondary" onclick="showView('view-email-login')">Sign in with Email & Password</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2B: EMAIL LOGIN ==================== -->
+    <div id="view-email-login" class="view-container">
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Sign in with Email</h2>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="email-login-id" class="input-box" value="demo@travelpay.internal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="email-login-pwd" class="input-box" value="Demo@123">
+        </div>
+        <button class="btn btn-primary" onclick="handleEmailLogin()">Sign In</button>
+        <button class="btn btn-secondary" style="margin-top: 10px;" onclick="showView('view-login')">Back to Phone Login</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2C: OTP VERIFICATION ==================== -->
+    <div id="view-otp-verify" class="view-container">
+      <div class="card" style="text-align: center;">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 6px;">Verify your mobile</h2>
+        <p style="font-size: 13px; color: var(--text-secondary);">Enter the 6-digit code sent to <b id="otp-target-display">+919876543210</b></p>
+
+        <!-- DEV OTP HELPER -->
+        <div id="dev-otp-helper" style="display:none; background: var(--warning-bg); padding: 8px 12px; border-radius: var(--radius-sm); margin: 14px 0; font-size: 12px; color: #8A4B00;">
+          💡 <b>TEST MODE OTP:</b> <span id="dev-otp-val" style="font-weight:700; font-size:14px; letter-spacing:2px;"></span>
+        </div>
+
+        <div class="otp-container">
+          <input type="tel" maxlength="1" class="otp-box">
+          <input type="tel" maxlength="1" class="otp-box">
+          <input type="tel" maxlength="1" class="otp-box">
+          <input type="tel" maxlength="1" class="otp-box">
+          <input type="tel" maxlength="1" class="otp-box">
+          <input type="tel" maxlength="1" class="otp-box">
+        </div>
+
+        <button class="btn btn-primary" onclick="handleVerifyOtp()">Verify & Continue</button>
+
+        <div style="margin-top: 18px;">
+          <button id="btn-resend-otp" class="btn btn-secondary" style="width: auto; padding: 6px 16px; font-size: 13px;" onclick="handleSendOtp()">Resend OTP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 3: PROFILE SETUP ==================== -->
+    <div id="view-onboarding-profile" class="view-container">
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Personal Information</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Required by RBI and foreign exchange regulations.</p>
+
+        <form onsubmit="handleProfileSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Full Name (as per Govt ID)</label>
+            <input type="text" id="profile-name" class="input-box" required placeholder="Aarav Sharma" value="Aarav Sharma">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="profile-email" class="input-box" required placeholder="aarav@example.com" value="aarav.traveller@gmail.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth (Must be 18+)</label>
+            <input type="date" id="profile-dob" class="input-box" required value="1995-05-15">
+          </div>
+          <button type="submit" class="btn btn-primary">Save & Continue</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 4: DEVICE BINDING ==================== -->
+    <div id="view-onboarding-device" class="view-container">
+      <div class="card" style="text-align: center;">
+        <div style="width: 60px; height: 60px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+        </div>
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Device Registered</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+          This device has been cryptographically bound to your TravelPay profile to safeguard your foreign transactions.
+        </p>
+        <div style="background: var(--bg); padding: 10px; border-radius: var(--radius-sm); font-family: monospace; font-size: 12px; margin-bottom: 20px;" id="device-fp-text">
+          DEV-FINGERPRINT
+        </div>
+        <button class="btn btn-primary" onclick="showView('view-onboarding-pin')">Continue to App PIN</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 5: APP PIN SETUP ==================== -->
+    <div id="view-onboarding-pin" class="view-container">
+      <div class="card" style="text-align: center;">
+        <h2 id="pin-setup-title" style="font-size: 20px; font-weight: 700; margin-bottom: 6px;">Create 6-digit App PIN</h2>
+        <p id="pin-setup-desc" style="font-size: 13px; color: var(--text-secondary);">This PIN authorizes payments and unlocks your app.</p>
+
+        <div class="pin-dots">
+          <div class="pin-dot" id="pin-dot-1"></div>
+          <div class="pin-dot" id="pin-dot-2"></div>
+          <div class="pin-dot" id="pin-dot-3"></div>
+          <div class="pin-dot" id="pin-dot-4"></div>
+          <div class="pin-dot" id="pin-dot-5"></div>
+          <div class="pin-dot" id="pin-dot-6"></div>
+        </div>
+
+        <div class="pin-pad-container">
+          <div class="pin-key" onclick="handlePinPadInput('1')">1</div>
+          <div class="pin-key" onclick="handlePinPadInput('2')">2</div>
+          <div class="pin-key" onclick="handlePinPadInput('3')">3</div>
+          <div class="pin-key" onclick="handlePinPadInput('4')">4</div>
+          <div class="pin-key" onclick="handlePinPadInput('5')">5</div>
+          <div class="pin-key" onclick="handlePinPadInput('6')">6</div>
+          <div class="pin-key" onclick="handlePinPadInput('7')">7</div>
+          <div class="pin-key" onclick="handlePinPadInput('8')">8</div>
+          <div class="pin-key" onclick="handlePinPadInput('9')">9</div>
+          <div class="pin-key" style="visibility:hidden"></div>
+          <div class="pin-key" onclick="handlePinPadInput('0')">0</div>
+          <div class="pin-key" onclick="handlePinPadInput('DEL')">⌫</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 6: KYC VERIFICATION ==================== -->
+    <div id="view-onboarding-kyc" class="view-container">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h2 style="font-size: 20px; font-weight: 700;">Identity Verification (KYC)</h2>
+          <span class="badge badge-warning">Required for LRS</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+          Indian regulations require PAN verification for foreign remittances. Your PAN is encrypted at rest.
+        </p>
+
+        <form onsubmit="handleKycSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">PAN Number</label>
+            <input type="text" id="kyc-pan" class="input-box" required placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase" value="ABCDE1234F">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Name on PAN</label>
+            <input type="text" id="kyc-name" class="input-box" required placeholder="Aarav Sharma" value="Aarav Sharma">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Residential Address</label>
+            <input type="text" id="kyc-address" class="input-box" required placeholder="42 Indiranagar, Bengaluru, KA" value="42 Indiranagar, Bengaluru, KA">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Passport Number (Optional)</label>
+            <input type="text" id="kyc-passport" class="input-box" placeholder="Z1234567" value="Z9876543">
+          </div>
+
+          <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">Upload Document & Selfie (Optional in Dev)</div>
+            <input type="file" style="font-size: 12px; margin-top: 4px;">
+          </div>
+
+          <button type="submit" class="btn btn-primary">Submit for Verification</button>
+        </form>
+
+        <div style="margin-top: 15px; text-align: center;">
+          <button class="btn btn-secondary" onclick="triggerSandboxKycApprove()">⚡ Instant Auto-Approve (Sandbox Mode)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 7: ADD FUNDING SOURCE ==================== -->
+    <div id="view-onboarding-funding" class="view-container">
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Add Funds to Wallet</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+          Add INR funds to your TravelPay balance. Whenever you scan a foreign QR, we convert from this balance in real time.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+          <button class="btn btn-secondary" onclick="handleWalletTopup(1000)">+ ₹1,000</button>
+          <button class="btn btn-secondary" onclick="handleWalletTopup(5000)">+ ₹5,000</button>
+          <button class="btn btn-secondary" onclick="handleWalletTopup(10000)">+ ₹10,000</button>
+          <button class="btn btn-secondary" onclick="handleWalletTopup(25000)">+ ₹25,000</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Or Custom Amount (₹)</label>
+          <input type="number" id="custom-topup-input" class="input-box" placeholder="5000" value="5000">
+        </div>
+
+        <button class="btn btn-primary" onclick="handleWalletTopup(parseFloat(document.getElementById('custom-topup-input').value))">
+          Pay with Razorpay Checkout (Test)
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 8: ACTIVATE INTERNATIONAL PAYMENTS ==================== -->
+    <div id="view-onboarding-activate" class="view-container">
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Activate International Payments</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+          Select the countries and currencies you plan to visit, review FEMA declarations, and set your limits.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Destination Countries / Currencies</label>
+          <div id="activation-countries-chips" style="display: flex; flex-wrap: wrap; margin-bottom: 10px;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Daily Spending Limit (₹)</label>
+          <input type="number" id="activate-daily-limit" class="input-box" value="50000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Per-Transaction Limit (₹)</label>
+          <input type="number" id="activate-txn-limit" class="input-box" value="25000">
+        </div>
+
+        <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-sm); margin: 16px 0; font-size: 12px; line-height: 1.5;">
+          <label style="display: flex; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+            <input type="checkbox" id="activate-fema-check" checked>
+            <span>I declare that foreign transactions will be within the RBI Liberalised Remittance Scheme (USD 250,000 limit) and for lawful travel purposes.</span>
+          </label>
+          <label style="display: flex; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="activate-terms-check" checked>
+            <span>I accept the TravelPay Terms of Service and cross-border settlement conditions.</span>
+          </label>
+        </div>
+
+        <button class="btn btn-primary" onclick="handleActivateInternational()">Activate & Start Paying</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 9: HOME SCREEN (GPAY STYLE) ==================== -->
+    <div id="view-home" class="view-container">
+      <!-- ACTIVATION PROGRESS BANNER (Visible if not active) -->
+      <div id="activation-progress-card" class="checklist-card" style="display:none;" onclick="routeIncompleteStep(APP_STATE.user)">
+        <div class="checklist-header">
+          <span class="checklist-title">Account Activation Incomplete</span>
+          <span id="checklist-steps-count" style="font-size:12px; font-weight:700; color:var(--primary);">3 of 8</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="checklist-progress-bar" class="progress-bar-fill" style="width: 37%;"></div>
+        </div>
+        <div id="checklist-next-step" style="font-size:12px; color:var(--primary-dark); font-weight:600;">Next: Complete KYC</div>
+      </div>
+
+      <!-- WALLET HERO CARD -->
+      <div class="wallet-hero">
+        <div class="sub" data-i18n="wallet_balance">Wallet Balance (INR)</div>
+        <div class="balance user-balance-val">₹0.00</div>
+        <div class="wallet-actions">
+          <button class="btn-glass" onclick="switchNavTab('wallet')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <span data-i18n="add_funds">Add Money</span>
+          </button>
+          <button class="btn-glass" onclick="showView('view-converter')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.89 11.1c-1.78-.59-2.64-.96-2.64-1.9 0-1.02 1.11-1.39 1.81-1.39 1.31 0 1.79.59 1.9 1.4h2.15c-.14-1.57-1.1-2.91-2.73-3.32V4h-2.76v1.86c-1.89.43-3.4 1.63-3.4 3.4 0 2.22 1.84 3.32 4.54 3.97 2.05.5 2.46 1.25 2.46 2.07 0 .84-.71 1.56-2.02 1.56-1.57 0-2.22-.72-2.39-1.82h-2.19c.18 2.07 1.63 3.19 3.54 3.58V21h2.76v-1.85c1.89-.42 3.43-1.6 3.43-3.47.01-2.31-1.87-3.28-4.76-3.98z"/></svg>
+            <span data-i18n="convert">Convert</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SCAN ANY QR HERO CARD -->
+      <div id="home-scan-card" class="scan-hero-card" onclick="startScanner()">
+        <div class="scan-hero-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2zM7 7h4v4H7zm6 0h4v4h-4zm-6 6h4v4H7zm6 0h4v4h-4z"/></svg>
+        </div>
+        <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;" data-i18n="scan_pay">Scan & Pay</div>
+        <div style="font-size: 13px; color: var(--text-secondary);" data-i18n="scan_desc">Scan PromptPay, QRIS, SGQR or any merchant QR</div>
+      </div>
+
+      <!-- RECENT ACTIVITY CARD -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 15px; font-weight: 700;" data-i18n="recent_activity">Recent Activity</h3>
+          <span style="font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer;" onclick="switchNavTab('history')">View all</span>
+        </div>
+        <div id="recent-txns-list"></div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 10: SCANNER SCREEN ==================== -->
+    <div id="view-scan" class="view-container">
+      <div class="card" style="text-align: center;">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Scan Merchant QR</h2>
+        <div id="qr-reader" style="width: 100%; min-height: 250px; background: #000; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 12px;"></div>
+        <div id="camera-fallback-msg" style="display:none; font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+          Camera permission required or device in sandbox. You can paste the raw QR string below or use test samples.
+        </div>
+
+        <!-- PASTE FALLBACK -->
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label">Or Paste QR Code Data</label>
+          <textarea id="paste-qr-input" class="input-box" rows="2" placeholder="00020101021229370016..."></textarea>
+          <button class="btn btn-secondary" style="margin-top: 8px;" onclick="handleScannedData(document.getElementById('paste-qr-input').value.trim())">Parse & Pay</button>
+        </div>
+
+        <!-- INSTANT TEST MERCHANTS -->
+        <div style="margin-top: 15px; text-align: left;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">⚡ Quick Test Samples:</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="simulateSampleQR('PromptPay')">🇹🇭 PromptPay Thailand (150 THB)</button>
+            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="simulateSampleQR('QRIS')">🇮🇩 QRIS Indonesia (45,000 IDR)</button>
+            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="simulateSampleQR('SGQR')">🇸🇬 SGQR Singapore (18.50 SGD)</button>
+            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="simulateSampleQR('JSON')">🇯🇵 JSON QR Japan (1,400 JPY)</button>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" style="margin-top: 15px;" onclick="stopScanner(); showView('view-home')">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 11: WALLET TAB ==================== -->
+    <div id="view-wallet" class="view-container">
+      <div class="wallet-hero">
+        <div class="sub">Total Available Balance</div>
+        <div class="balance user-balance-val">₹0.00</div>
+      </div>
+      <div class="card">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px;">Add INR to Wallet</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+          <button class="btn btn-secondary" onclick="handleWalletTopup(500)">+ ₹500</button>
+          <button class="btn btn-secondary" onclick="handleWalletTopup(2000)">+ ₹2,000</button>
+          <button class="btn btn-secondary" onclick="handleWalletTopup(5000)">+ ₹5,000</button>
+          <button class="btn btn-secondary" onclick="handleWalletTopup(10000)">+ ₹10,000</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 12: HISTORY TAB ==================== -->
+    <div id="view-history" class="view-container">
+      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Transaction History</h2>
+      <div id="full-history-list"></div>
+    </div>
+
+    <!-- ==================== VIEW 13: CONVERTER TAB ==================== -->
+    <div id="view-converter" class="view-container">
+      <div class="card">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Live Currency Converter</h2>
+        <div class="form-group">
+          <label class="form-label">Foreign Currency</label>
+          <select id="conv-curr" class="input-box" onchange="runConverter()"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foreign Amount</label>
+          <input type="number" id="conv-amount" class="input-box" value="100" oninput="runConverter()">
+        </div>
+        <div style="background: var(--bg); padding: 14px; border-radius: var(--radius-sm); margin: 16px 0;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;">
+            <span>FX Rate:</span>
+            <span id="conv-rate" style="font-weight:600;">-</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;">
+            <span>Base INR:</span>
+            <span id="conv-base" style="font-weight:600;">-</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;">
+            <span>Markup Fee (2%):</span>
+            <span id="conv-markup">-</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;">
+            <span>GST on Fee (18%):</span>
+            <span id="conv-gst">-</span>
+          </div>
+          <hr style="border:none; border-top:1px solid var(--border); margin:8px 0;">
+          <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:700; color:var(--primary);">
+            <span>Total INR Payable:</span>
+            <span id="conv-total">-</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="showView('view-home')">Done</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 14: PROFILE & SETTINGS ==================== -->
+    <div id="view-profile" class="view-container">
+      <div class="card" style="text-align: center;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto;">
+          👤
+        </div>
+        <h2 id="prof-name" style="font-size: 18px; font-weight: 700;">Traveller</h2>
+        <div id="prof-mobile" style="font-size: 13px; color: var(--text-secondary);">+91...</div>
+        <div id="prof-email" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">user@example.com</div>
+        <div>
+          KYC Status: <span id="prof-kyc-badge" class="badge badge-success">VERIFIED</span>
+          &bull;
+          Account: <span id="prof-account-status" class="badge badge-info">ACTIVE</span>
+        </div>
+      </div>
+
+      <!-- LANGUAGE SELECTOR -->
+      <div class="card">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 10px;">Language / भाषा / மொழி</h3>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary lang-btn" data-lang="en">English</button>
+          <button class="btn btn-secondary lang-btn" data-lang="hi">हिंदी</button>
+          <button class="btn btn-secondary lang-btn" data-lang="ta">தமிழ்</button>
+        </div>
+      </div>
+
+      <!-- REGISTERED DEVICES -->
+      <div class="card">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;">Your Registered Devices</h3>
+        <div id="prof-device-list"></div>
+      </div>
+
+      <!-- PAUSE / RESUME INTERNATIONAL -->
+      <div class="card">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;">Security & Controls</h3>
+        <button class="btn btn-secondary" style="margin-bottom: 8px;" onclick="togglePausePayments()">Pause / Resume Payments</button>
+        <button class="btn btn-outline-danger" onclick="handleLogout()">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 15: SUCCESS SCREEN ==================== -->
+    <div id="view-success" class="view-container">
+      <div class="card" style="text-align: center; padding: 30px 15px;">
+        <div class="success-checkmark">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Paid to</div>
+        <h2 id="success-merchant" style="font-size: 22px; font-weight: 700; margin-bottom: 4px;">Siam Paragon Cafe</h2>
+        <div id="success-foreign" style="font-size: 15px; color: var(--text-secondary); margin-bottom: 16px;">150.00 THB</div>
+        <div id="success-amount" style="font-size: 32px; font-weight: 700; color: var(--primary); margin-bottom: 16px;">₹378.40</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 24px;">Settlement Rail Ref: <span id="success-ref">STL-SANDBOX-123</span></div>
+
+        <button id="btn-download-pdf-receipt" class="btn btn-secondary" style="margin-bottom: 10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Download PDF Receipt
+        </button>
+        <button class="btn btn-primary" onclick="showView('view-home')">Done</button>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: QUOTE & CONFIRMATION SHEET ==================== -->
+    <div id="modal-quote-sheet" class="modal-overlay">
+      <div class="bottom-sheet">
+        <!-- 120S LIVE TIMER BAR -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">CONFIRM PAYMENT</span>
+          <span id="quote-timer-text" class="badge badge-warning">120s left</span>
+        </div>
+        <div class="progress-bar-bg" style="margin-bottom:16px;">
+          <div id="quote-timer-bar" class="progress-bar-fill" style="width: 100%;"></div>
+        </div>
+
+        <div style="text-align:center; margin-bottom:16px;">
+          <h2 id="quote-merchant-name" style="font-size:20px; font-weight:700;">Merchant</h2>
+          <div id="quote-location" style="font-size:12px; color:var(--text-secondary);">Bangkok, TH</div>
+          <div id="quote-foreign-amount" style="font-size:24px; font-weight:700; margin:8px 0; color:var(--text-primary);">150.00 THB</div>
+        </div>
+
+        <!-- BREAKDOWN TABLE -->
+        <div style="background:var(--bg); padding:14px; border-radius:var(--radius-sm); margin-bottom:18px; font-size:13px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Live FX Rate:</span>
+            <span id="quote-fx-rate" style="font-weight:600;">1 INR = 0.4100 THB</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Base INR Amount:</span>
+            <span id="quote-base-inr">₹365.85</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Forex Markup Fee:</span>
+            <span id="quote-fee-inr">₹7.32 (2%)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>GST on Fee:</span>
+            <span id="quote-gst-inr">₹1.32 (18%)</span>
+          </div>
+          <hr style="border:none; border-top:1px solid var(--border); margin:8px 0;">
+          <div style="display:flex; justify-content:space-between; font-size:17px; font-weight:700; color:var(--primary);">
+            <span>Total INR to Pay:</span>
+            <span id="quote-total-inr">₹374.49</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="openPaymentPinModal()">Pay with App PIN</button>
+        <button class="btn btn-secondary" style="margin-top:8px;" onclick="document.getElementById('modal-quote-sheet').classList.remove('active')">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: PAYMENT PIN KEYPAD ==================== -->
+    <div id="modal-pay-pin" class="modal-overlay">
+      <div class="bottom-sheet" style="text-align: center;">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">Enter App PIN</h3>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Wrong PIN 3 times will lock payments for 30 minutes.</p>
+
+        <div class="pin-dots">
+          <div class="pin-dot" id="pay-pin-dot-1"></div>
+          <div class="pin-dot" id="pay-pin-dot-2"></div>
+          <div class="pin-dot" id="pay-pin-dot-3"></div>
+          <div class="pin-dot" id="pay-pin-dot-4"></div>
+          <div class="pin-dot" id="pay-pin-dot-5"></div>
+          <div class="pin-dot" id="pay-pin-dot-6"></div>
+        </div>
+
+        <div class="pin-pad-container">
+          <div class="pin-key" onclick="handlePayPinInput('1')">1</div>
+          <div class="pin-key" onclick="handlePayPinInput('2')">2</div>
+          <div class="pin-key" onclick="handlePayPinInput('3')">3</div>
+          <div class="pin-key" onclick="handlePayPinInput('4')">4</div>
+          <div class="pin-key" onclick="handlePayPinInput('5')">5</div>
+          <div class="pin-key" onclick="handlePayPinInput('6')">6</div>
+          <div class="pin-key" onclick="handlePayPinInput('7')">7</div>
+          <div class="pin-key" onclick="handlePayPinInput('8')">8</div>
+          <div class="pin-key" onclick="handlePayPinInput('9')">9</div>
+          <div class="pin-key" style="font-size:14px;" onclick="confirmQuotePayment(null, true)">🔒 Bio</div>
+          <div class="pin-key" onclick="handlePayPinInput('0')">0</div>
+          <div class="pin-key" onclick="handlePayPinInput('DEL')">⌫</div>
+        </div>
+
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="document.getElementById('modal-pay-pin').classList.remove('active')">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: 60S INACTIVITY LOCK ==================== -->
+    <div id="modal-app-lock" class="modal-overlay">
+      <div class="bottom-sheet" style="text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 8px;">🔒</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">TravelPay Locked</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">App locked due to 60s inactivity. Enter your PIN to resume.</p>
+        <div class="form-group">
+          <input type="password" id="unlock-pin-input" class="input-box" maxlength="6" placeholder="Enter 6-digit PIN" style="text-align:center; font-size:20px; letter-spacing:4px;">
+        </div>
+        <button class="btn btn-primary" onclick="unlockAppWithPin(document.getElementById('unlock-pin-input').value)">Unlock</button>
+      </div>
+    </div>
+
+    <!-- ==================== GPay BOTTOM NAVIGATION ==================== -->
+    <nav id="bottom-nav" class="bottom-nav" style="display:none;">
+      <a class="nav-item active" id="nav-btn-home" data-nav="home">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span data-i18n="home">Home</span>
+      </a>
+      <a class="nav-item" id="nav-btn-wallet" data-nav="wallet">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+        <span data-i18n="wallet">Wallet</span>
+      </a>
+      <div class="nav-scan-pill" onclick="startScanner()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2zM7 7h4v4H7zm6 0h4v4h-4zm-6 6h4v4H7zm6 0h4v4h-4z"/></svg>
+      </div>
+      <a class="nav-item" id="nav-btn-history" data-nav="history">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        <span data-i18n="history">History</span>
+      </a>
+      <a class="nav-item" id="nav-btn-profile" data-nav="profile">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span data-i18n="profile">Profile</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- VENDOR LIBRARIES -->
+  <script src="/static/vendor/html5-qrcode.min.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script>
+    // Quick sample simulator helper
+    async function simulateSampleQR(rail) {
+      const samples = {
+        'PromptPay': '00020101021229370016A0000006770101110113006681234567853037645406150.005802TH5917Siam Paragon Cafe6007Bangkok63048783',
+        'QRIS': '00020101021226500014ID.CO.QRIS.WWW0118936009990000012345520458125303360540845000.005802ID5916Warung Kopi Bali6008Denpasar6304CA12',
+        'SGQR': '00020101021226400015COM.NETS.SGQR0111111199998888520454115303702540518.505802SG5921Maxwell Hawker Centre6009Singapore6304F2E4',
+        'JSON': JSON.stringify({ merchant: "Shibuya Ramen", currency: "JPY", amount: 1400, city: "Tokyo", country: "JP" })
+      };
+      stopScanner();
+      handleScannedData(samples[rail] || samples['PromptPay']);
+    }
+
+    async function handleEmailLogin() {
+      const email = document.getElementById('email-login-id').value.trim();
+      const pwd = document.getElementById('email-login-pwd').value;
+      try {
+        const res = await apiPost('/api/auth/email/login', {
+          email: email,
+          password: pwd,
+          device_id: APP_STATE.deviceFingerprint
+        });
+        APP_STATE.token = res.access_token;
+        localStorage.setItem('tp_token', res.access_token);
+        APP_STATE.user = res.user;
+        showToast("Signed in successfully!");
+        fetchUserProfile();
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+
+    async function togglePausePayments() {
+      if (APP_STATE.user.account_status === 'ACTIVE') {
+        await apiPost('/api/onboarding/pause-international', {});
+        showToast("International payments paused");
+      } else {
+        await apiPost('/api/onboarding/resume-international', {});
+        showToast("International payments resumed");
+      }
+      fetchUserProfile();
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('tp_token');
+      APP_STATE.token = null;
+      APP_STATE.user = null;
+      showToast("Signed out");
+      showView('view-welcome');
+    }
+
+    // Dynamic Converter logic
+    async function loadConverterCurrencies() {
+      try {
+        const list = await apiGet('/api/rates/currencies');
+        const sel = document.getElementById('conv-curr');
+        if (sel) {
+          sel.innerHTML = '';
+          list.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.code;
+            opt.innerText = `${c.flag} ${c.code} - ${c.name}`;
+            sel.appendChild(opt);
+          });
+          runConverter();
+        }
+      } catch (e) {}
+    }
+
+    async function runConverter() {
+      const curr = document.getElementById('conv-curr').value;
+      const amt = parseFloat(document.getElementById('conv-amount').value) || 0;
+      if (!curr || amt <= 0) return;
+      try {
+        const res = await apiPost('/api/rates/convert', { from_currency: curr, to_currency: 'INR', amount: amt });
+        document.getElementById('conv-rate').innerText = `1 INR = ${parseFloat(res.rate).toFixed(4)} ${curr}`;
+        document.getElementById('conv-base').innerText = `₹${parseFloat(res.converted_amount).toFixed(2)}`;
+        document.getElementById('conv-markup').innerText = `₹${parseFloat(res.markup_inr).toFixed(2)}`;
+        document.getElementById('conv-gst').innerText = `₹${parseFloat(res.gst_inr).toFixed(2)}`;
+        document.getElementById('conv-total').innerText = `₹${parseFloat(res.total_inr).toFixed(2)}`;
+      } catch (e) {}
+    }
+    loadConverterCurrencies();
+  </script>
+</body>
+</html>
+

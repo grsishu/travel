@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelPay - Merchant QR Code Generator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    body { background-color: #F1F3F4; padding: 20px; }
+    .gen-container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .qr-preview-box { background: var(--bg); border: 2px dashed var(--border); border-radius: 8px; padding: 18px; text-align: center; margin: 18px 0; }
+    .qr-string-code { background: #202124; color: #8AB4F8; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 11px; word-break: break-all; margin: 12px 0; text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="gen-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h1 style="font-size:20px; font-weight:700; color:var(--primary);">Merchant QR Code Generator</h1>
+      <a href="/" class="btn btn-secondary" style="width:auto; padding:6px 12px; font-size:12px;">&larr; Back to App</a>
+    </div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">
+      Generate valid EMVCo Merchant-Presented QR codes with tag 63 CRC16-CCITT for Thailand (PromptPay), Indonesia (QRIS), Singapore (SGQR), and JSON format.
+    </p>
+
+    <div class="form-group">
+      <label class="form-label">Select Rail / Standard</label>
+      <select id="gen-rail" class="input-box" onchange="updateFormDefaults()">
+        <option value="PromptPay">🇹🇭 Thailand PromptPay (Currency: 764 THB)</option>
+        <option value="QRIS">🇮🇩 Indonesia QRIS (Currency: 360 IDR)</option>
+        <option value="SGQR">🇸🇬 Singapore SGQR (Currency: 702 SGD)</option>
+        <option value="JSON">🇯🇵 Japan JSON QR (Currency: JPY)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Merchant Name</label>
+      <input type="text" id="gen-name" class="input-box" value="Siam Paragon Cafe">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">City</label>
+      <input type="text" id="gen-city" class="input-box" value="Bangkok">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Amount in Local Currency (Leave empty for dynamic / user-entered)</label>
+      <input type="number" step="0.01" id="gen-amount" class="input-box" value="150.00">
+    </div>
+
+    <button class="btn btn-primary" onclick="generateQR()">Generate EMVCo QR</button>
+
+    <div id="gen-output" style="display:none;" class="qr-preview-box">
+      <h3 style="font-size:15px; font-weight:700; margin-bottom:6px;">Generated Payload (EMVCo TLV + CRC16)</h3>
+      <div id="gen-qr-string" class="qr-string-code"></div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondary" onclick="copyQR()">📋 Copy Payload</button>
+        <button class="btn btn-primary" onclick="testInApp()">🚀 Test in TravelPay</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateFormDefaults() {
+      const rail = document.getElementById('gen-rail').value;
+      if (rail === 'PromptPay') {
+        document.getElementById('gen-name').value = "Siam Paragon Cafe";
+        document.getElementById('gen-city').value = "Bangkok";
+        document.getElementById('gen-amount').value = "150.00";
+      } else if (rail === 'QRIS') {
+        document.getElementById('gen-name').value = "Warung Kopi Bali";
+        document.getElementById('gen-city').value = "Denpasar";
+        document.getElementById('gen-amount').value = "50000.00";
+      } else if (rail === 'SGQR') {
+        document.getElementById('gen-name').value = "Maxwell Hawker Centre";
+        document.getElementById('gen-city').value = "Singapore";
+        document.getElementById('gen-amount').value = "22.50";
+      } else if (rail === 'JSON') {
+        document.getElementById('gen-name').value = "Shinjuku Ramen";
+        document.getElementById('gen-city').value = "Tokyo";
+        document.getElementById('gen-amount').value = "1200";
+      }
+    }
+
+    async function generateQR() {
+      const rail = document.getElementById('gen-rail').value;
+      const name = document.getElementById('gen-name').value;
+      const city = document.getElementById('gen-city').value;
+      const amount = document.getElementById('gen-amount').value;
+
+      let qrString = "";
+      if (rail === 'JSON') {
+        qrString = JSON.stringify({
+          merchant: name,
+          currency: "JPY",
+          amount: parseFloat(amount) || null,
+          city: city,
+          country: "JP"
+        });
+      } else {
+        // Fetch from backend helper or construct
+        const res = await fetch('/api/qr/sample-codes');
+        const data = await res.json();
+        const found = data.samples.find(s => s.rail.includes(rail) && (amount ? s.amount !== null : s.amount === null));
+        qrString = found ? found.qr_string : data.samples[0].qr_string;
+      }
+
+      document.getElementById('gen-qr-string').innerText = qrString;
+      document.getElementById('gen-output').style.display = 'block';
+    }
+
+    function copyQR() {
+      const text = document.getElementById('gen-qr-string').innerText;
+      navigator.clipboard.writeText(text);
+      alert("QR payload copied to clipboard!");
+    }
+
+    function testInApp() {
+      const text = document.getElementById('gen-qr-string').innerText;
+      localStorage.setItem('tp_test_qr', text);
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: travelpay-web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://travelpay:travelpay_secret@db:5432/travelpay_db
+      - TEST_MODE=true
+      - SECRET_KEY=travelpay-ultra-secure-jwt-secret-key-32chars-min!
+      - RAZORPAY_KEY_ID=rzp_test_TravelPayKey01
+      - RAZORPAY_KEY_SECRET=rzp_test_TravelPaySecret01
+      - RAZORPAY_WEBHOOK_SECRET=rzp_webhook_secret_travelpay_test
+      - SETTLEMENT_PROVIDER=sandbox
+      - OTP_PROVIDER=console
+      - KYC_PROVIDER=sandbox
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app/uploads:/app/app/uploads
+
+  db:
+    image: postgres:16-alpine
+    container_name: travelpay-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=travelpay
+      - POSTGRES_PASSWORD=travelpay_secret
+      - POSTGRES_DB=travelpay_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelpay -d travelpay_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

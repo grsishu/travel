@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelPay - Admin Operations Console</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    body { background-color: #F1F3F4; padding: 20px; }
+    .admin-container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
+    th { background: var(--bg); font-weight: 700; color: var(--text-secondary); }
+    .admin-nav { display: flex; gap: 8px; border-bottom: 2px solid var(--border-light); padding-bottom: 12px; margin-bottom: 20px; }
+    .admin-nav button { padding: 8px 16px; border-radius: 20px; border: none; background: transparent; font-weight: 600; cursor: pointer; color: var(--text-secondary); }
+    .admin-nav button.active { background: var(--primary-light); color: var(--primary); }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div>
+        <h1 style="font-size:22px; font-weight:700; color:var(--primary);">TravelPay Admin Operations</h1>
+        <p style="font-size:13px; color:var(--text-secondary);">Compliance, KYC Verification, Settlement Monitoring & Fraud Review</p>
+      </div>
+      <div id="admin-auth-status" style="font-size:13px;">
+        <span id="admin-badge" class="badge badge-warning">Checking Auth...</span>
+      </div>
+    </div>
+
+    <!-- ADMIN LOGIN MODAL / BOX -->
+    <div id="admin-login-box" class="card" style="display:none; max-width:400px; margin:40px auto; text-align:center;">
+      <h2 style="font-size:18px; font-weight:700; margin-bottom:12px;">Admin Sign In</h2>
+      <div class="form-group" style="text-align:left;">
+        <label class="form-label">Admin Email</label>
+        <input type="email" id="adm-email" class="input-box" value="admin@travelpay.internal">
+      </div>
+      <div class="form-group" style="text-align:left;">
+        <label class="form-label">Password</label>
+        <input type="password" id="adm-pwd" class="input-box" value="Admin@123">
+      </div>
+      <button class="btn btn-primary" onclick="adminLogin()">Sign In as Administrator</button>
+    </div>
+
+    <!-- MAIN ADMIN PANELS -->
+    <div id="admin-main-panel" style="display:none;">
+      <div class="admin-nav">
+        <button class="active" onclick="switchSection('sec-users', this)">👥 Users</button>
+        <button onclick="switchSection('sec-kyc', this)">🪪 KYC Approvals (<span id="kyc-badge-count">0</span>)</button>
+        <button onclick="switchSection('sec-txns', this)">💳 Transactions & Settlement</button>
+        <button onclick="switchSection('sec-fraud', this)">🛡️ Fraud Queue (<span id="fraud-badge-count">0</span>)</button>
+        <button onclick="switchSection('sec-config', this)">⚙️ Fee & Rates Config</button>
+      </div>
+
+      <!-- SECTION 1: USERS -->
+      <div id="sec-users" class="admin-section active">
+        <h3 style="font-size:16px; font-weight:700;">Registered Travellers</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Mobile</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>KYC</th>
+              <th>Balance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-users"></tbody>
+        </table>
+      </div>
+
+      <!-- SECTION 2: KYC QUEUE -->
+      <div id="sec-kyc" class="admin-section">
+        <h3 style="font-size:16px; font-weight:700;">Pending KYC Submissions</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User ID</th>
+              <th>Full Name</th>
+              <th>PAN (Masked)</th>
+              <th>Address</th>
+              <th>Passport</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-kyc"></tbody>
+        </table>
+      </div>
+
+      <!-- SECTION 3: TRANSACTIONS & SETTLEMENTS -->
+      <div id="sec-txns" class="admin-section">
+        <h3 style="font-size:16px; font-weight:700;">Live Payments & Settlements</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Txn ID</th>
+              <th>Merchant</th>
+              <th>Foreign Amt</th>
+              <th>Total INR</th>
+              <th>Status</th>
+              <th>Settlement Rail Ref</th>
+              <th>Provider</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-txns"></tbody>
+        </table>
+      </div>
+
+      <!-- SECTION 4: FRAUD QUEUE -->
+      <div id="sec-fraud" class="admin-section">
+        <h3 style="font-size:16px; font-weight:700;">Transactions Under Fraud Review</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Txn ID</th>
+              <th>User ID</th>
+              <th>Merchant</th>
+              <th>INR Amount</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-fraud"></tbody>
+        </table>
+      </div>
+
+      <!-- SECTION 5: FEE CONFIG -->
+      <div id="sec-config" class="admin-section">
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:12px;">Global Fee & GST Rates</h3>
+        <div class="card" style="max-width:450px;">
+          <div class="form-group">
+            <label class="form-label">Forex Markup Fee (%)</label>
+            <input type="number" step="0.1" id="cfg-markup" class="input-box" value="2.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">GST on Forex Fee (%)</label>
+            <input type="number" step="0.1" id="cfg-gst" class="input-box" value="18.0">
+          </div>
+          <button class="btn btn-primary" onclick="updateFeeConfig()">Update Rates</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let adminToken = localStorage.getItem('tp_admin_token') || localStorage.getItem('tp_token');
+
+    async function adminApi(url, method = 'GET', body = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'API call failed');
+      }
+      return res.json();
+    }
+
+    async function checkAdminAuth() {
+      if (!adminToken) {
+        showLoginBox();
+        return;
+      }
+      try {
+        const me = await adminApi('/api/auth/me');
+        if (me.role !== 'ADMIN') {
+          showLoginBox();
+          return;
+        }
+        document.getElementById('admin-badge').className = 'badge badge-success';
+        document.getElementById('admin-badge').innerText = `Logged in: ${me.email || me.id}`;
+        document.getElementById('admin-login-box').style.display = 'none';
+        document.getElementById('admin-main-panel').style.display = 'block';
+        loadAdminData();
+      } catch (e) {
+        showLoginBox();
+      }
+    }
+
+    function showLoginBox() {
+      document.getElementById('admin-badge').className = 'badge badge-danger';
+      document.getElementById('admin-badge').innerText = 'Unauthenticated';
+      document.getElementById('admin-login-box').style.display = 'block';
+      document.getElementById('admin-main-panel').style.display = 'none';
+    }
+
+    async function adminLogin() {
+      const email = document.getElementById('adm-email').value;
+      const pwd = document.getElementById('adm-pwd').value;
+      try {
+        const res = await fetch('/api/auth/email/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pwd, device_id: 'ADMIN-CONSOLE' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Login failed');
+        adminToken = data.access_token;
+        localStorage.setItem('tp_admin_token', adminToken);
+        checkAdminAuth();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function switchSection(secId, btn) {
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById(secId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    async function loadAdminData() {
+      // Load users
+      const users = await adminApi('/api/admin/users');
+      const tblUsers = document.getElementById('tbl-users');
+      tblUsers.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u.id}</td>
+          <td><b>${u.full_name || 'Incomplete'}</b></td>
+          <td>${u.mobile || '-'}</td>
+          <td>${u.email || '-'}</td>
+          <td><span class="badge ${u.account_status === 'ACTIVE' ? 'badge-success' : (u.account_status === 'FROZEN' ? 'badge-danger' : 'badge-warning')}">${u.account_status}</span></td>
+          <td><span class="badge ${u.kyc_status === 'VERIFIED' ? 'badge-success' : 'badge-warning'}">${u.kyc_status}</span></td>
+          <td>₹${u.wallet_balance_inr.toFixed(2)}</td>
+          <td>
+            <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;width:auto;" onclick="toggleFreeze(${u.id}, ${u.account_status === 'FROZEN' ? 'false' : 'true'})">
+              ${u.account_status === 'FROZEN' ? 'Unfreeze' : 'Freeze'}
+            </button>
+          </td>
+        `;
+        tblUsers.appendChild(tr);
+      });
+
+      // Load KYC pending
+      const kycList = await adminApi('/api/admin/kyc/pending');
+      document.getElementById('kyc-badge-count').innerText = kycList.length;
+      const tblKyc = document.getElementById('tbl-kyc');
+      tblKyc.innerHTML = '';
+      kycList.forEach(k => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${k.id}</td>
+          <td>${k.user_id}</td>
+          <td>${k.full_name}</td>
+          <td><code>${k.pan_masked}</code></td>
+          <td>${k.address}</td>
+          <td>${k.passport_number || '-'}</td>
+          <td><span class="badge badge-warning">${k.status}</span></td>
+          <td>
+            <button class="btn btn-primary" style="padding:4px 8px;font-size:11px;width:auto;" onclick="actionKyc(${k.id}, 'APPROVE')">Approve</button>
+            <button class="btn btn-outline-danger" style="padding:4px 8px;font-size:11px;width:auto;" onclick="actionKyc(${k.id}, 'REJECT')">Reject</button>
+          </td>
+        `;
+        tblKyc.appendChild(tr);
+      });
+
+      // Load Transactions
+      const txns = await adminApi('/api/admin/transactions');
+      const tblTxns = document.getElementById('tbl-txns');
+      tblTxns.innerHTML = '';
+      txns.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${t.id}</code></td>
+          <td>${t.merchant_name || t.txn_type}</td>
+          <td>${t.foreign_amount ? `${t.foreign_amount} ${t.foreign_currency}` : '-'}</td>
+          <td>₹${t.inr_amount.toFixed(2)}</td>
+          <td><span class="badge ${t.status === 'SETTLED' ? 'badge-success' : (t.status === 'FAILED' ? 'badge-danger' : 'badge-warning')}">${t.status}</span></td>
+          <td><code>${t.settlement_id || '-'}</code></td>
+          <td>${t.settlement_provider || 'gateway'}</td>
+          <td>
+            ${t.status !== 'REFUNDED' && t.txn_type === 'MERCHANT_PAYMENT' ? `<button class="btn btn-outline-danger" style="padding:4px 8px;font-size:11px;width:auto;" onclick="manualRefund('${t.id}')">Refund</button>` : ''}
+          </td>
+        `;
+        tblTxns.appendChild(tr);
+      });
+
+      // Load Fraud queue
+      const fraudList = await adminApi('/api/admin/fraud-queue');
+      document.getElementById('fraud-badge-count').innerText = fraudList.length;
+      const tblFraud = document.getElementById('tbl-fraud');
+      tblFraud.innerHTML = '';
+      fraudList.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${f.id}</code></td>
+          <td>${f.user_id}</td>
+          <td>${f.merchant_name}</td>
+          <td>₹${f.inr_amount.toFixed(2)}</td>
+          <td>${new Date(f.created_at).toLocaleString()}</td>
+          <td>
+            <button class="btn btn-primary" style="padding:4px 8px;font-size:11px;width:auto;" onclick="manualRefund('${f.id}')">Dismiss / Refund</button>
+          </td>
+        `;
+        tblFraud.appendChild(tr);
+      });
+    }
+
+    async function actionKyc(kycId, action) {
+      const reason = action === 'REJECT' ? prompt("Reason for rejection:") : "Document verified";
+      if (action === 'REJECT' && !reason) return;
+      await adminApi(`/api/admin/kyc/${kycId}/action`, 'POST', { action, reason });
+      alert(`KYC ${action} successful!`);
+      loadAdminData();
+    }
+
+    async function toggleFreeze(userId, freeze) {
+      const reason = prompt(`Reason for ${freeze ? 'freezing' : 'unfreezing'} account:`, "Risk inspection");
+      if (!reason) return;
+      await adminApi(`/api/admin/users/${userId}/freeze`, 'POST', { freeze, reason });
+      loadAdminData();
+    }
+
+    async function manualRefund(txnId) {
+      const reason = prompt("Enter reason for manual refund:", "Customer support request");
+      if (!reason) return;
+      await adminApi(`/api/admin/transactions/${txnId}/manual-refund`, 'POST', { reason });
+      alert("Refund processed successfully!");
+      loadAdminData();
+    }
+
+    async function updateFeeConfig() {
+      const markup = parseFloat(document.getElementById('cfg-markup').value);
+      const gst = parseFloat(document.getElementById('cfg-gst').value);
+      await adminApi('/api/admin/fee-config', 'POST', { markup_percent: markup, gst_percent: gst });
+      alert("Fee rates updated successfully!");
+    }
+
+    checkAdminAuth();
+  </script>
+</body>
+</html>
+
